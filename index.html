@@ -139,7 +139,7 @@ const supabaseKey = "sb_publishable_bfzHWF9Pdf0qp-a4P5I6IQ_7LA-AG7o";
 const client = supabase.createClient(supabaseUrl, supabaseKey);
 </script>
 <script>
-let cart=[];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 const data={
 // your original data here
@@ -180,6 +180,28 @@ accessories:[
   ]
 };
 
+
+
+function updateCart(){
+let b=document.getElementById('cartItems');
+b.innerHTML='';
+let t=0;
+
+cart.forEach(i=>{
+t+=i.price*i.qty;
+b.innerHTML+=`<p>${i.name} x${i.qty}</p>`;
+});
+
+document.getElementById('total').innerText='Total: '+t;
+}
+
+updateCart();
+
+function toggleCart(){
+document.getElementById('cartDrawer').classList.toggle('open');
+}
+
+// ================= SHOW PRODUCTS =================
 async function showBrand(brand){
 
 let c = document.getElementById('products');
@@ -190,140 +212,92 @@ let { data: products } = await client.from("products").select("*");
 data[brand].forEach(p => {
 
 let dbItem = products.find(x => x.name === p.name);
-
 let stock = dbItem ? dbItem.stock : 0;
 
-let card = document.createElement('div');
-card.className = "card";
-
-let stockText = stock > 0 
-  ? `<p>Stock: ${stock}</p>` 
-  : `<p style="color:red;">Out of Stock</p>`;
-
-card.innerHTML = `
-  <img src="${p.img}">
-  <h3>${p.name}</h3>
-  ${stockText}
-`;
-
-if(stock > 0){
-  card.innerHTML += `
-  <button onclick="event.stopPropagation(); addToCart('${p.name}',${p.price || p.yourPrice})">
-  Add to Cart
-  </button>`;
-}
-
-c.appendChild(card);
-});
-
-}
+let price = p.yourPrice || p.price;
 
 let card = document.createElement('div');
 card.className = "card";
 
-card.innerHTML = `
-  <img src="${p.img}" alt="${p.name}">
-  <h3>${p.name}</h3>
-`;
-
-// ? CLICK FIX (yahan bahar hona chahiye)
+// click ? open detail page
 card.onclick = () => openProduct(p);
 
-let priceHTML = "";
+card.innerHTML = `
+<img src="${p.img}">
+<h3>${p.name}</h3>
 
-if(p.marketPrice){
-priceHTML = `
-<p style="text-decoration: line-through; color: gray;">
-PKR ${p.marketPrice}
-</p>
-<p style="font-weight:bold;">PKR ${p.yourPrice}</p>
-${p.note ? `<small>${p.note}</small>` : ""}
-<button onclick="event.stopPropagation(); addToCart('${p.name}',${p.yourPrice})">
-Add to Cart
-</button>
-`;
-}else{
-priceHTML = `
-<p>PKR ${p.price}</p>
-<button onclick="event.stopPropagation(); addToCart('${p.name}',${p.price})">
-Add to Cart
-</button>
-`;
+${stock > 0 
+  ? `<p>Stock: ${stock}</p>
+     <p>PKR ${price}</p>
+     <button onclick="event.stopPropagation(); addToCartDirect('${p.name}', ${price}, '${p.img}')">
+     Add to Cart
+     </button>`
+  : `<p style="color:red;">Out of Stock</p>`
 }
-
-card.innerHTML += priceHTML;
+`;
 
 c.appendChild(card);
+
 });
 
 document.getElementById('productsSection')
 .scrollIntoView({behavior:'smooth'});
 }
 
-async function addToCart() {
-  const item = JSON.parse(localStorage.getItem("selectedItem"));
+// ================= ADD TO CART =================
+function addToCartDirect(name, price, img){
 
-  if (!item) {
-    alert("No item selected");
-    return;
-  }
+let existing = cart.find(i => i.name === name);
 
-  let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-  let existing = cart.find(i => i.name === item.name);
-
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    cart.push({
-      name: item.name,
-      price: item.yourPrice || item.price || 1000,
-      img: item.img,
-      qty: 1
-    });
-  }
-
-  localStorage.setItem("cart", JSON.stringify(cart));
-
-  alert("Added to cart!");
+if(existing){
+existing.qty += 1;
+}else{
+cart.push({name, price, img, qty:1});
 }
 
+localStorage.setItem("cart", JSON.stringify(cart));
+updateCart();
+
+alert("Added to cart!");
+}
+
+// ================= OPEN DETAIL =================
 function openProduct(item){
-  localStorage.setItem("selectedItem", JSON.stringify(item));
-  window.location.href = "details.html";
+localStorage.setItem("selectedItem", JSON.stringify(item));
+window.location.href = "details.html";
 }
 
-function updateCart(){
-let b=document.getElementById('cartItems');
-b.innerHTML='';
-let t=0;
-cart.forEach(i=>{t+=i.price*i.qty;b.innerHTML+=`<p>${i.name} x${i.qty}</p>`});
-document.getElementById('total').innerText='Total: '+t;
-}
-
-function toggleCart(){document.getElementById('cartDrawer').classList.toggle('open')}
-
+// ================= PLACE ORDER =================
 async function placeOrder(){
-for (let item of cart) {
 
-  let { data } = await client
-    .from("products")
-    .select("*")
-    .eq("name", item.name)
-    .single();
-
-  if(data){
-    let newStock = data.stock - item.qty;
-
-    await client
-      .from("products")
-      .update({ stock: newStock })
-      .eq("name", item.name);
-  }
-}
 if(cart.length===0){
 alert('Cart is empty');
 return;
+}
+
+// stock update
+for (let item of cart) {
+
+let { data } = await client
+.from("products")
+.select("*")
+.eq("name", item.name)
+.single();
+
+if(data){
+
+if(data.stock < item.qty){
+alert(item.name + " out of stock!");
+return;
+}
+
+let newStock = data.stock - item.qty;
+
+await client
+.from("products")
+.update({ stock: newStock })
+.eq("name", item.name);
+}
 }
 
 let orderData = {
@@ -335,24 +309,28 @@ phone: document.getElementById('phone').value,
 address: document.getElementById('address').value
 };
 
-const { data, error } = await client
+const { error } = await client
 .from("orders")
-.insert([orderData])
-.select();
+.insert([orderData]);
 
 if(error){
 alert("Order failed: " + error.message);
-console.log(error);
 return;
 }
 
 document.getElementById('successModal').style.display='flex';
-cart=[];
+
+localStorage.removeItem("cart");
+cart = [];
 updateCart();
 }
 
-function closeModal(){document.getElementById('successModal').style.display='none'}
+// ================= MODAL =================
+function closeModal(){
+document.getElementById('successModal').style.display='none';
+}
 
+// ================= REPAIR =================
 async function submitRepair(e){
 e.preventDefault();
 
@@ -367,7 +345,6 @@ let { error } = await client.from("repairs").insert([data]);
 
 if(error){
 alert("Repair failed");
-console.log(error);
 return;
 }
 
