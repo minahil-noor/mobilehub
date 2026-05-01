@@ -209,18 +209,17 @@ c.innerHTML = '';
 
 let { data: products } = await client.from("products").select("*");
 
-data[brand].forEach(p => {
+(data[brand] || []).forEach(p => {
 
-let dbItem = products.find(x => x.name === p.name);
+let dbItem = (products || []).find(x => x.name === p.name);
 let stock = dbItem ? dbItem.stock : 0;
-
-let price = p.yourPrice || p.price;
 
 let card = document.createElement('div');
 card.className = "card";
 
-// click ? open detail page
 card.onclick = () => openProduct(p);
+
+let price = p.yourPrice || p.price;
 
 card.innerHTML = `
 <img src="${p.img}">
@@ -229,7 +228,7 @@ card.innerHTML = `
 ${stock > 0 
   ? `<p>Stock: ${stock}</p>
      <p>PKR ${price}</p>
-     <button onclick="event.stopPropagation(); addToCartDirect('${p.name}', ${price}, '${p.img}')">
+     <button onclick="event.stopPropagation(); addToCartDirect(${JSON.stringify(p.name)}, ${price}, ${JSON.stringify(p.img)})">
      Add to Cart
      </button>`
   : `<p style="color:red;">Out of Stock</p>`
@@ -247,17 +246,17 @@ document.getElementById('productsSection')
 // ================= ADD TO CART =================
 function addToCartDirect(name, price, img){
 
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
 let existing = cart.find(i => i.name === name);
 
 if(existing){
-existing.qty += 1;
+  existing.qty += 1;
 }else{
-cart.push({name, price, img, qty:1});
+  cart.push({name, price, img, qty:1});
 }
 
 localStorage.setItem("cart", JSON.stringify(cart));
-updateCart();
-
 alert("Added to cart!");
 }
 
