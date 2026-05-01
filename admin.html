@@ -1,0 +1,173 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - SmartMob Hub</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body{
+font-family:'Poppins',sans-serif;
+background:#f4f6fb;
+color:#333;
+padding:20px;
+}
+
+h2{
+text-align:center;
+color:#6c63ff;
+margin-bottom:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-bottom:40px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:10px;
+text-align:left;
+}
+
+th{
+background:#6c63ff;
+color:#fff;
+}
+
+tr:nth-child(even){
+background:#e9ecef;
+}
+
+section{
+margin-bottom:50px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Admin Panel - SmartMob Hub</h2>
+
+<section>
+<h3>Orders</h3>
+<table id="ordersTable">
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Phone</th>
+<th>Address</th>
+<th>Payment Method</th>
+<th>Items</th>
+<th>Total</th>
+</tr>
+</table>
+</section>
+
+<section>
+<h3>Repair Requests</h3>
+<table id="repairsTable">
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Phone</th>
+<th>Email</th>
+<th>Problem</th>
+</tr>
+</table>
+</section>
+
+<!-- SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseUrl = "https://cxyxbwsosroeipdjyuuc.supabase.co";
+const supabaseKey = "sb_publishable_bfzHWF9Pdf0qp-a4P5I6IQ_7LA-AG7o";
+
+const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+const ordersTable = document.getElementById('ordersTable');
+const repairsTable = document.getElementById('repairsTable');
+
+async function loadAdminData(){
+
+// ================= ORDERS =================
+let { data: orders } = await client.from("orders").select("*").order("id",{ascending:false});
+
+ordersTable.innerHTML = `
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Phone</th>
+<th>Address</th>
+<th>Payment Method</th>
+<th>Items</th>
+<th>Total</th>
+</tr>
+`;
+
+orders.forEach((o,i)=>{
+let items = (o.items || []).map(it => it.name + " x" + it.qty).join("<br>");
+
+ordersTable.innerHTML += `
+<tr>
+<td>${i+1}</td>
+<td>${o.name}</td>
+<td>${o.phone}</td>
+<td>${o.address}</td>
+<td>${o.method}</td>
+<td>${items}</td>
+<td>${o.total}</td>
+</tr>
+`;
+});
+
+// ================= REPAIRS =================
+let { data: repairs } = await client.from("repairs").select("*").order("id",{ascending:false});
+
+repairsTable.innerHTML = `
+<tr>
+<th>#</th>
+<th>Name</th>
+<th>Phone</th>
+<th>Email</th>
+<th>Problem</th>
+</tr>
+`;
+
+repairs.forEach((r,i)=>{
+repairsTable.innerHTML += `
+<tr>
+<td>${i+1}</td>
+<td>${r.name}</td>
+<td>${r.phone}</td>
+<td>${r.email}</td>
+<td>${r.problem}</td>
+</tr>
+`;
+});
+
+}
+
+// auto refresh
+loadAdminData();
+setInterval(loadAdminData,5000);
+client
+.channel('orders-channel')
+.on('postgres_changes', 
+  { event: 'INSERT', schema: 'public', table: 'orders' }, 
+  payload => {
+    alert("New Order Received!");
+    loadAdminData();
+  }
+)
+.subscribe();
+</script>
+
+</body>
+</html>
+```

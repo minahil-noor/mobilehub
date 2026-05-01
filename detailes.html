@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Page</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body{margin:0;font-family:Poppins;background:#0f0f0f;color:#fff}
+.container{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding:40px}
+img{width:100%;border-radius:10px}
+h1{font-size:30px}
+.price{color:#ff8c00;font-size:28px;margin:15px 0}
+.badge{background:#ff8c00;color:#000;padding:5px 10px;border-radius:5px;font-size:12px}
+.box{margin-top:20px;background:#1a1a1a;padding:15px;border-radius:10px}
+select,input{width:100%;padding:10px;margin:10px 0;border-radius:5px;border:none}
+button{width:100%;padding:15px;background:#ff8c00;border:none;color:#000;font-weight:bold;cursor:pointer;border-radius:8px}
+ul{padding-left:20px}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="page"></div>
+
+<script>
+const item = JSON.parse(localStorage.getItem("selectedItem"));
+
+// ?? SMART BACKEND (covers ALL items)
+function backend(name){
+name = name.toLowerCase();
+
+/* =========================
+    EAR BUDS SYSTEM
+========================= */
+if(name.includes("buds")){
+return {
+type:"Premium Audio Device",
+condition:"New 10/10",
+battery:"6-10 Hours Backup",
+warranty:"6 Months Warranty",
+delivery:"300",
+
+features:[
+"Hi-Fi Stereo Sound",
+"Noise Cancellation",
+"Bluetooth 5.3",
+"Fast Auto Connect",
+"Comfort Fit Design"
+],
+
+trust:[
+"Top Selling Product",
+"Verified Quality",
+"1000+ Happy Customers",
+"Original Build Material"
+],
+
+box:[
+"Charging Case",
+"USB Cable",
+"Extra Ear Tips",
+"User Manual"
+],
+
+price:"3000 - 5500 PKR"
+}
+}
+
+/* =========================
+    CHARGERS SYSTEM
+========================= */
+if(name.includes("charger")){
+return {
+type:"Fast Charging Device",
+condition:"New 10/10",
+warranty:"3 Months Warranty",
+delivery:"Free Delivery",
+
+features:[
+"Fast Charging Support",
+"Overheat Protection",
+"Durable Cable",
+"Universal Compatibility"
+],
+
+trust:[
+"Safe Usage",
+"Long Life Product",
+"Verified Supplier"
+],
+
+box:[
+"1x Charger",
+"1x Cable",
+"Warranty Card"
+],
+
+price:"900 - 2200 PKR"
+}
+}
+
+/* =========================
+    BATTERY SYSTEM
+========================= */
+if(name.includes("battery")){
+return {
+type:"Replacement Service",
+condition:"Installed New",
+warranty:"1 Month Warranty",
+delivery:"Service Based",
+
+features:[
+"Long Backup Battery",
+"Safe Installation",
+"Original Grade Cell",
+"Fast Charging Support"
+],
+
+trust:[
+"Expert Technician",
+"Quality Tested",
+"Safe Service"
+],
+
+box:[
+"Installed Battery",
+"Testing Report"
+],
+
+price:"1200 - 3500 PKR"
+}
+}
+
+/* =========================
+    SCREEN REPAIR
+========================= */
+if(name.includes("screen")){
+return {
+type:"Repair Service",
+condition:"Professional Fix",
+warranty:"2 Months Warranty",
+delivery:"On Spot Service",
+
+features:[
+"Original Display Quality",
+"Scratch Resistant Glass",
+"Perfect Touch Response",
+"Color Accuracy"
+],
+
+trust:[
+"Skilled Technician",
+"Guaranteed Work",
+"High Quality Parts"
+],
+
+box:[
+"Installed Screen",
+"Repair Report"
+],
+
+price:"2500 - 6000 PKR"
+}
+}
+
+/* =========================
+   DEFAULT (ALL PRODUCTS)
+========================= */
+return {
+type:"General Product",
+condition:"Good 9/10",
+warranty:"Depends Product",
+delivery:"Standard Delivery",
+
+features:[
+"High Quality Build",
+"Durable Material",
+"Good Performance",
+"Value for Money"
+],
+
+trust:[
+"Trusted Store",
+"Customer Satisfaction",
+"Reliable Service"
+],
+
+box:[
+"Standard Package"
+],
+
+price:"Market Price"
+}
+}
+const b = backend(item.name);
+
+document.getElementById("page").innerHTML = `
+<div>
+  <img src="${item.img}">
+</div>
+
+<div>
+  <p>HOME / PRODUCTS / ${item.name.toUpperCase()}</p>
+
+  <h1>${item.name}</h1>
+
+  <p>Condition: ${b.condition}</p>
+  <p>Battery Health: ${b.battery}</p>
+  <p class="badge">${b.type}</p>
+
+  <div class="price">${b.price}</div>
+
+  <div class="box">
+    <h3>Storage</h3>
+    <select>
+      <option>64GB</option>
+      <option>128GB</option>
+      <option>256GB</option>
+    </select>
+
+    <h3>Color</h3>
+    <select>
+      <option>Black</option>
+      <option>White</option>
+      <option>Blue</option>
+    </select>
+
+    <input type="number" value="1" min="10">
+
+    
+  </div>
+
+  <div class="box">
+    <h3>Description</h3>
+    <p>This is a high quality ${item.name} with premium performance and durability.</p>
+  </div>
+
+  <div class="box">
+  <h3>Features</h3>
+  <ul>
+    ${b.features.map(f=>`<li>? ${f}</li>`).join('')}
+  </ul>
+</div>
+    <div class="box">
+  <h3>What is in the Box</h3>
+  <ul>
+    ${b.box.map(bx=>`<li>?? ${bx}</li>`).join('')}
+  </ul>
+</div>
+
+ <div class="box">
+  <h3>Why Trust Us</h3>
+  <ul>
+    ${b.trust.map(t=>`<li>? ${t}</li>`).join('')}
+  </ul>
+</div>
+`;
+</script>
+<script>
+function addToCart() {
+  const item = JSON.parse(localStorage.getItem("selectedItem"));
+
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+  let existing = cart.find(i => i.name === item.name);
+
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({
+      name: item.name,
+      price: item.yourPrice || item.price || 1000,
+      qty: 1
+    });
+  }
+
+  localStorage.setItem("cart", JSON.stringify(cart));
+
+  alert("Added to cart!");
+}
+</script>
+
+</body>
+</html>
